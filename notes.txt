@@ -1,0 +1,20 @@
+Notes for my own sanity (I'm not an astrophysicist)
+
+These notes are based in part on my (mis)understanding (I'm sure) of "Computing Planetary Positions" by Paul Schlyter.
+
+Time represented in days since the start of the millennium
+eq: d = 367*Y - (7*(Y + ((M+9)/12)))/4 + (275*M)/9 + D - 730530 + UT/24.0
+Valid until 2100
+
+pretend sun orbits earth to make calcs easier
+
+List of variables and their meanings:
+N = Longitudinal Ascent Node
+w = Argument of perigee/periapsis
+i = inclination
+a = mean distance
+e = eccentricity
+M = Mean anomaly
+L* = mean longitude of *
+M* = mean anomaly of *
+
