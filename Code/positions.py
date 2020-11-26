@@ -2,6 +2,15 @@ import math
 import calculations as calc
 
 
+# Gets Telescope's Coordinates
+def getTelescopeCoords():
+    lat = 42.4793  # Replace with real values from gps sensor
+    long = -71.1523  # Replace with real values from gps sensor
+    #long = 15
+    coords = [lat,  long]
+    return coords
+
+
 def getPositionData(object_name):
     try:
         obj_file = open("../Data/{}.csv".format(object_name))
@@ -13,7 +22,7 @@ def getPositionData(object_name):
         for x in range(2):
             for y in range(6):
                 obj_data[x][y] = float(obj_data[x][y])
-        print(obj_data)
+        #print(obj_data)
         obj_file.close()
         return obj_data
     except FileNotFoundError:
@@ -35,9 +44,26 @@ def EcliptoRA(lat, long, r, d):
     yeclip = r * math.sin(longRad) * math.cos(latRad)
     zeclip = r * math.sin(latRad)
     oblecl = math.radians(23.4393 - 3.563*(10**-7) * d)
-    xequat = math.radians(xeclip)
-    yequat = math.radians(yeclip * math.cos(oblecl) - zeclip * math.sin(oblecl))
-    zequat = math.radians(yeclip * math.sin(oblecl) + zeclip * math.cos(oblecl))
+    xequat = xeclip
+    yequat = yeclip * math.cos(oblecl) - zeclip * math.sin(oblecl)
+    zequat = yeclip * math.sin(oblecl) + zeclip * math.cos(oblecl)
     RA = calc.rev(math.degrees(math.atan2(yequat, xequat)))
     Decl = math.degrees(math.atan2(zequat, math.sqrt(xequat**2 + yequat**2)))
-    print(RA,Decl)
+    return RA, Decl
+
+
+def RAtoAzimuth(RA, Decl, d):
+    LST = calc.findLST(d)
+    TLat = getTelescopeCoords()[0]
+    HA = calc.rev(LST - RA)
+    print("HA:", HA)
+    x = math.cos(math.radians(HA)) * math.cos(math.radians(Decl))
+    y = math.sin(math.radians(HA)) * math.cos(math.radians(Decl))
+    z = math.sin(math.radians(Decl))
+    xhor = x * math.sin(math.radians(TLat)) - z * math.cos(math.radians(TLat))
+    yhor = y
+    zhor = x * math.cos(math.radians(TLat)) + z * math.sin(math.radians(TLat))
+    azimuth = math.degrees(math.atan2(yhor, xhor)) + 180
+    altitude = math.degrees(math.asin(zhor))
+    print(azimuth, altitude)
+
