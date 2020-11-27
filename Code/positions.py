@@ -7,6 +7,7 @@ def getTelescopeCoords():
     lat = 42.4793  # Replace with real values from gps sensor
     long = -71.1523  # Replace with real values from gps sensor
     #long = 15
+    #lat = 60
     coords = [lat,  long]
     return coords
 
@@ -37,6 +38,16 @@ def XYZtoLatLongR(x,y,z):
     return coords
 
 
+def RVtoLatLong(r,vRad,NRad,wRad,iRad):
+    xh = r * (math.cos(NRad) * math.cos(vRad + wRad) - math.sin(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
+    yh = r * (math.sin(NRad) * math.cos(vRad + wRad) + math.cos(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
+    zh = r * (math.sin(vRad + wRad) * math.sin(iRad))
+    lonecl = math.degrees(math.atan2(yh, xh))
+    latecl = math.degrees(math.atan2(zh, math.sqrt(xh * xh + yh * yh)))
+    print("Lat:", latecl, "Long:", lonecl)
+    return [latecl, lonecl]
+
+
 def EcliptoRA(lat, long, r, d):
     latRad = math.radians(lat)
     longRad = math.radians(long)
@@ -47,8 +58,8 @@ def EcliptoRA(lat, long, r, d):
     xequat = xeclip
     yequat = yeclip * math.cos(oblecl) - zeclip * math.sin(oblecl)
     zequat = yeclip * math.sin(oblecl) + zeclip * math.cos(oblecl)
-    RA = calc.rev(math.degrees(math.atan2(yequat, xequat)))
-    Decl = math.degrees(math.atan2(zequat, math.sqrt(xequat**2 + yequat**2)))
+    RA = calc.rev(math.degrees(math.atan2(yequat, xequat)))  # degrees
+    Decl = math.degrees(math.atan2(zequat, math.sqrt(xequat**2 + yequat**2)))  # degrees
     return RA, Decl
 
 

@@ -59,17 +59,21 @@ def calculatePosition(object_name, date):
     vRad = math.atan2(y, x)
     v = rev(math.degrees(vRad))
     #print(r,v)
-    xeclip = r * (math.cos(NRad) * math.cos(vRad+ wRad) - math.sin(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
-    yeclip = r * (math.sin(NRad) * math.cos(vRad + wRad) + math.cos(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
-    zeclip = r * math.sin(vRad + wRad) * math.sin(iRad)
+    #xeclip = r * (math.cos(NRad) * math.cos(vRad+ wRad) - math.sin(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
+    #yeclip = r * (math.sin(NRad) * math.cos(vRad + wRad) + math.cos(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
+    #zeclip = r * math.sin(vRad + wRad) * math.sin(iRad)
     #print(xeclip,yeclip,zeclip)
-    coords = pos.XYZtoLatLongR(xeclip,yeclip,zeclip)
-    #print(coords)
-    RA, Decl = pos.EcliptoRA(coords[0], coords[1], coords[2], d)
+    #coords = pos.XYZtoLatLongR(xeclip,yeclip,zeclip)
+    coords = pos.RVtoLatLong(r, vRad, NRad, wRad, iRad)
+    if object_name == "moon":
+        coord_mods = addMoonPerturbations(d,N+w+M,M,w+M)
+        for x in range(2):
+            coords[x] += coord_mods[x]
+    RA, Decl = pos.EcliptoRA(coords[0], coords[1], r, d)
+    print("RA h, Decl deg: ",RA/15,Decl)
     topRA, topDecl = converttoTopo(geo,r,coords[0],RA,Decl,d)
-    print("RA,Decl:",topRA,topDecl)
+    print("RA h,Decl deg:",topRA/15,topDecl)
     pos.RAtoAzimuth(topRA,topDecl,d)
-    addMoonPerturbations(d,N+w+M,M,w+M)
 
 
 def getEccVal(E0, e, M):
@@ -88,11 +92,11 @@ def getEccVal(E0, e, M):
 
 
 def rev(deg):
-    '''
+    """
     Returns the value of a given variable between 0 and 360 degrees
     :param deg:
     :return: deg
-    '''
+    """
     return deg - math.floor(deg/360.0)*360
 
 
@@ -113,9 +117,10 @@ def converttoTopo(geo, r, lat, RA, Decl, d):
     DeclRad = math.radians(Decl)
     HARad = math.radians(HA)
     gclatRad = math.radians(gclat)
-    g = math.atan(math.tan(gclatRad) / math.cos(HARad))
+    g = rev(math.degrees(math.atan(math.tan(gclatRad) / math.cos(HARad))))
+    print("g:",g)
     topRA = RA - par * rho * math.cos(gclatRad) * math.sin(HARad) / math.cos(DeclRad)
-    topDecl = Decl - par * rho * math.sin(gclatRad) * math.sin(g - DeclRad) / math.sin(g)
+    topDecl = Decl - par * rho * math.sin(gclatRad) * math.sin(g - DeclRad) / math.sin(math.radians(g))
     return topRA, topDecl
 
 
@@ -131,7 +136,7 @@ def findLST(d):
     LST = GMST0 + UT + TLong / 15
     LST = rev(LST*15)
     print("LST:", LST)
-    return LST
+    return LST  # degrees
 
 
 def addMoonPerturbations(d, Lm, Mm, F):
@@ -158,4 +163,8 @@ def addMoonPerturbations(d, Lm, Mm, F):
     long += -0.031* math.sin(MmRad + MsRad)
     long += -0.015* math.sin(2 * FRad - 2 * DRad)
     long += 0.011* math.sin(MmRad - 4 * DRad)
-    print(long)
+
+    lat = 0
+    r = 0
+
+    return long, lat, r
