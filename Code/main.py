@@ -4,8 +4,10 @@ import time
 import datetime as dt
 
 if __name__ == "__main__":
+    target = "mars"
     print("Welcome to Project Atlas")
     time.sleep(1)
+    print("Target:", target.upper())
     location = pos.getTelescopeCoords()
     print("Location: {0}, {1}".format(location[0], location[1]))
     current_time = dt.datetime.utcnow()
@@ -16,4 +18,4 @@ if __name__ == "__main__":
     test_time4 = dt.datetime(2000,1,1,0,0,0,0)
     print("Current Time: {} days since 31 Dec 1999".format(d))
 
-    calc.calculatePosition("moon", current_time)
+    calc.calculatePosition(target.lower(), current_time)

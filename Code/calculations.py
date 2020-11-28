@@ -66,7 +66,7 @@ def calculatePosition(object_name, date):
     r = math.sqrt(x * x + y * y)
     v = rev(math.degrees(math.atan2(y, x)))
     vRad = math.radians(v)
-    print("R-V:",r,v)
+    #print("R-V:",r,v)
     coords = pos.RVtoLatLong(r, vRad, NRad, wRad, iRad, d, offset)
 
     if object_name == "moon":
@@ -75,7 +75,7 @@ def calculatePosition(object_name, date):
             coords[x] += coord_mods[x]
 
     RA, Decl = pos.EcliptoRA(coords[0], coords[1], coords[2], d)
-    print("RA h, Decl deg:",RA/15,Decl)
+    #print("RA h, Decl deg:",RA/15,Decl)
     topRA, topDecl = converttoTopo(geo,coords[2],pos.getTelescopeCoords()[0],RA,Decl,d)
     print("RA h,Decl deg:",topRA/15,topDecl)
     pos.RAtoAzimuth(topRA,topDecl,d)
@@ -83,19 +83,19 @@ def calculatePosition(object_name, date):
 
 
 def showRightAscensionDeclination(RA,Decl):
-    hours = math.floor(RA/15)
-    minutes_mid = (RA/15 - hours)*60
-    minutes = math.floor(minutes_mid)
-    seconds = math.floor((minutes_mid-minutes)*100)
-    deciDecl = .6*(Decl - math.floor(Decl))
-    newDecl = math.floor(Decl) + deciDecl
-    strdecl = str(newDecl)
-    degs = strdecl.split(".")[0]
-    rest = strdecl.split(".")[1]
-    mins = rest[0:2]
-    secs = rest[2:4]
-    print("RA: {0}h {1}m {2}s -- Decl: {3} deg {4}\' {5}\""
-          .format(hours,minutes,seconds,degs,mins,secs))
+    deg_mod = Decl/abs(Decl)
+    ttra = 3600*RA/15
+    hours = math.floor(ttra/3600)
+    remainder = ttra-(hours*3600)
+    minutes = math.floor(remainder/60)
+    seconds = remainder - (minutes*60)
+    degs = math.floor(abs(Decl))
+    ttdecl = 3600*(abs(Decl)-math.floor(abs(Decl)))
+    mins = math.floor(ttdecl/60)
+    secs = ttdecl - (mins*60)
+
+    print("RA: {0}h {1}m {2}s -- Decl: {3}\u00b0 {4}\' {5}\""
+          .format(hours,minutes,int(seconds),int(degs*deg_mod),mins,int(secs)))
 
 
 def extrapolateInfo(N,w,i,a,e,M,d):
@@ -147,15 +147,15 @@ def converttoTopo(geo, r, lat, RA, Decl, d):
 
     gclat = lat - 0.1924 * math.sin(2 * math.radians(lat))
     rho = 0.99833 + 0.00167 * math.cos(2 * math.radians(lat))
-    print("Gclat:", gclat, "Rho:", rho)
-    pos.RAtoAzimuth(RA, Decl, d)
+    #print("Gclat:", gclat, "Rho:", rho)
+    #pos.RAtoAzimuth(RA, Decl, d)
     LST = findLST(d)
     HA = rev(LST - RA+180)-180
     DeclRad = math.radians(Decl)
     HARad = math.radians(HA)
     gclatRad = math.radians(gclat)
     gRad = math.atan(math.tan(gclatRad) / math.cos(HARad))
-    print("g:",math.degrees(gRad)+90)
+    #print("g:",math.degrees(gRad)+90)
     topRA = RA - par * rho * math.cos(gclatRad) * math.sin(HARad) / math.cos(DeclRad)
     topDecl = Decl - par * rho * math.sin(gclatRad) * math.sin(gRad - DeclRad) / math.sin(gRad)
     return topRA, topDecl
@@ -184,15 +184,15 @@ def offsetSun(d):
     #ES = getEccVal(E0, eS, MS)
     xS = math.cos(math.radians(ES)) - eS
     yS = math.sin(math.radians(ES)) * math.sqrt(1 - eS**2)
-    print("xs-ys:",xS,yS)
+    #print("xs-ys:",xS,yS)
     rS = math.sqrt(xS**2 + yS**2)
     vS = math.degrees(math.atan2(yS,xS))
-    print("w,a,e,M:",wS,aS,eS,MS)
-    print("vS, wS", vS, wS)
+    #print("w,a,e,M:",wS,aS,eS,MS)
+    #print("vS, wS", vS, wS)
     longS = rev(vS + wS)
     xs = rS*math.cos(math.radians(longS))
     ys = rS*math.sin(math.radians(longS))
-    print("XS-Y:",xs,ys)
+    #print("XS-Y:",xs,ys)
     return xs, ys
 
 
@@ -231,5 +231,5 @@ def addMoonPerturbations(d, Lm, Mm, F):
     r = 0
     r += -0.58 * math.cos(MmRad - 2 * DRad)
     r += -0.46 * math.cos(2 * DRad)
-    print("LatMod:",lat,"LongMod:",long,"RMod:",r)
+    #print("LatMod:",lat,"LongMod:",long,"RMod:",r)
     return lat, long, r

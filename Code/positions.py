@@ -38,11 +38,11 @@ def RVtoLatLong(r,vRad,NRad,wRad,iRad,d,offset):
         xs,ys = calc.offsetSun(d)
         xh += xs
         yh += ys
-    print("XYZ:",xh,yh,zh)
+    #print("XYZ:",xh,yh,zh)
     lonecl = calc.rev(math.degrees(math.atan2(yh, xh)))
     latecl = math.degrees(math.atan2(zh, math.sqrt(xh * xh + yh * yh)))
     r = math.sqrt(xh**2 + yh**2 + zh**2)
-    print("Lat:", latecl, "Long:", lonecl, "R:", r)
+    #print("Lat:", latecl, "Long:", lonecl, "R:", r)
     return [latecl, lonecl, r]
 
 
@@ -56,7 +56,7 @@ def EcliptoRA(lat, long, r, d):
     xequat = xeclip
     yequat = yeclip * math.cos(oblecl) - zeclip * math.sin(oblecl)
     zequat = yeclip * math.sin(oblecl) + zeclip * math.cos(oblecl)
-    print("EQUATS:", xequat,yequat,zequat)
+    #print("EQUATS:", xequat,yequat,zequat)
     RA = calc.rev(math.degrees(math.atan2(yequat, xequat)))  # degrees
     Decl = math.degrees(math.atan2(zequat, math.sqrt(xequat**2 + yequat**2)))  # degrees
     return RA, Decl
@@ -67,7 +67,7 @@ def RAtoAzimuth(RA, Decl, d):
     TLat = getTelescopeCoords()[0]
     #TLat = 42.48881
     HA = calc.rev(LST - RA + 180) - 180
-    print("HA:", HA)
+    #print("HA:", HA)
     x = math.cos(math.radians(HA)) * math.cos(math.radians(Decl))
     y = math.sin(math.radians(HA)) * math.cos(math.radians(Decl))
     z = math.sin(math.radians(Decl))
@@ -76,5 +76,5 @@ def RAtoAzimuth(RA, Decl, d):
     zhor = x * math.cos(math.radians(TLat)) + z * math.sin(math.radians(TLat))
     azimuth = math.degrees(math.atan2(yhor, xhor)) + 180
     altitude = math.degrees(math.asin(zhor))
-    print(azimuth, altitude)
+    print("Az:",azimuth,"Alt:", altitude)
 
