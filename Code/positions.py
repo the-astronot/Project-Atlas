@@ -4,8 +4,8 @@ import calculations as calc
 
 # Gets Telescope's Coordinates
 def getTelescopeCoords():
-    lat = 42.4793  # Replace with real values from gps sensor
-    long = -71.1523  # Replace with real values from gps sensor
+    lat = 42.48881  # Replace with real values from gps sensor
+    long = -71.15390  # Replace with real values from gps sensor
     #long = 15
     #lat = 60
     coords = [lat,  long]
@@ -30,22 +30,20 @@ def getPositionData(object_name):
         print("No such object found")
 
 
-def XYZtoLatLongR(x,y,z):
-    lat = math.degrees(math.atan2(z, math.sqrt(x**2 + y**2)))
-    long = math.degrees(math.atan2(y,x))
-    r = math.sqrt(x**2 + y**2 + z**2)
-    coords = [lat, long, r]
-    return coords
-
-
-def RVtoLatLong(r,vRad,NRad,wRad,iRad):
+def RVtoLatLong(r,vRad,NRad,wRad,iRad,d,offset):
     xh = r * (math.cos(NRad) * math.cos(vRad + wRad) - math.sin(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
     yh = r * (math.sin(NRad) * math.cos(vRad + wRad) + math.cos(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
     zh = r * (math.sin(vRad + wRad) * math.sin(iRad))
-    lonecl = math.degrees(math.atan2(yh, xh))
+    if offset:
+        xs,ys = calc.offsetSun(d)
+        xh += xs
+        yh += ys
+    print("XYZ:",xh,yh,zh)
+    lonecl = calc.rev(math.degrees(math.atan2(yh, xh)))
     latecl = math.degrees(math.atan2(zh, math.sqrt(xh * xh + yh * yh)))
-    print("Lat:", latecl, "Long:", lonecl)
-    return [latecl, lonecl]
+    r = math.sqrt(xh**2 + yh**2 + zh**2)
+    print("Lat:", latecl, "Long:", lonecl, "R:", r)
+    return [latecl, lonecl, r]
 
 
 def EcliptoRA(lat, long, r, d):
@@ -58,6 +56,7 @@ def EcliptoRA(lat, long, r, d):
     xequat = xeclip
     yequat = yeclip * math.cos(oblecl) - zeclip * math.sin(oblecl)
     zequat = yeclip * math.sin(oblecl) + zeclip * math.cos(oblecl)
+    print("EQUATS:", xequat,yequat,zequat)
     RA = calc.rev(math.degrees(math.atan2(yequat, xequat)))  # degrees
     Decl = math.degrees(math.atan2(zequat, math.sqrt(xequat**2 + yequat**2)))  # degrees
     return RA, Decl
@@ -66,7 +65,8 @@ def EcliptoRA(lat, long, r, d):
 def RAtoAzimuth(RA, Decl, d):
     LST = calc.findLST(d)
     TLat = getTelescopeCoords()[0]
-    HA = calc.rev(LST - RA)
+    #TLat = 42.48881
+    HA = calc.rev(LST - RA + 180) - 180
     print("HA:", HA)
     x = math.cos(math.radians(HA)) * math.cos(math.radians(Decl))
     y = math.sin(math.radians(HA)) * math.cos(math.radians(Decl))

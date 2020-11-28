@@ -19,24 +19,14 @@ def getDayTime(date):
     hours = date.hour
     minutes = date.minute
     seconds = date.second
-    print(date.ctime())
-    d = 367 * year - int((7 * (year + ((month + 9) / 12))) / 4) + int((275 * month) / 9) + day - 730530 + \
+    #print(year,month,day,hours,minutes,seconds)
+    d = 367 * year - int((7 * (year + int((month + 9) / 12))) / 4) + int((275 * month) / 9) + day - 730530 + \
         hours/24.0 + minutes/1440.0 + seconds/86400.0
     return d
 
 
-def calculatePosition(object_name, date):
-    """
-    Calculates the position of a given body at a given time
-    :param object_name: Name of body
-    :param date: current date and time
-    :return: position
-    """
+def readData(object_name, d):
     data = pos.getPositionData(object_name)
-    geo = False
-    if data[0][6] == "true":
-        geo = True
-    d = getDayTime(date)
     N = data[0][0] + data[1][0] * d  # deg
     w = data[0][1] + data[1][1] * d  # deg
     i = data[0][2] + data[1][2] * d  # deg
@@ -47,6 +37,24 @@ def calculatePosition(object_name, date):
     w = rev(w)
     i = rev(i)
     M = rev(M)
+    geo = False
+    offset = False
+    if data[0][6] == "true":
+        geo = True
+    if data[1][6] == "true":
+        offset = True
+    return N,w,i,a,e,M,geo,offset
+
+
+def calculatePosition(object_name, date):
+    """
+    Calculates the position of a given body at a given time
+    :param object_name: Name of body
+    :param date: current date and time
+    :return: position
+    """
+    d = getDayTime(date)
+    N,w,i,a,e,M,geo,offset = readData(object_name,d)
     NRad = math.radians(N)
     wRad = math.radians(w)
     iRad = math.radians(i)
@@ -56,24 +64,51 @@ def calculatePosition(object_name, date):
     x = a * (math.cos(math.radians(E)) - e)
     y = a * math.sqrt(1 - e**2) * math.sin(math.radians(E))
     r = math.sqrt(x * x + y * y)
-    vRad = math.atan2(y, x)
-    v = rev(math.degrees(vRad))
-    #print(r,v)
-    #xeclip = r * (math.cos(NRad) * math.cos(vRad+ wRad) - math.sin(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
-    #yeclip = r * (math.sin(NRad) * math.cos(vRad + wRad) + math.cos(NRad) * math.sin(vRad + wRad) * math.cos(iRad))
-    #zeclip = r * math.sin(vRad + wRad) * math.sin(iRad)
-    #print(xeclip,yeclip,zeclip)
-    #coords = pos.XYZtoLatLongR(xeclip,yeclip,zeclip)
-    coords = pos.RVtoLatLong(r, vRad, NRad, wRad, iRad)
+    v = rev(math.degrees(math.atan2(y, x)))
+    vRad = math.radians(v)
+    print("R-V:",r,v)
+    coords = pos.RVtoLatLong(r, vRad, NRad, wRad, iRad, d, offset)
+
     if object_name == "moon":
         coord_mods = addMoonPerturbations(d,N+w+M,M,w+M)
-        for x in range(2):
+        for x in range(3):
             coords[x] += coord_mods[x]
-    RA, Decl = pos.EcliptoRA(coords[0], coords[1], r, d)
-    print("RA h, Decl deg: ",RA/15,Decl)
-    topRA, topDecl = converttoTopo(geo,r,coords[0],RA,Decl,d)
+
+    RA, Decl = pos.EcliptoRA(coords[0], coords[1], coords[2], d)
+    print("RA h, Decl deg:",RA/15,Decl)
+    topRA, topDecl = converttoTopo(geo,coords[2],pos.getTelescopeCoords()[0],RA,Decl,d)
     print("RA h,Decl deg:",topRA/15,topDecl)
     pos.RAtoAzimuth(topRA,topDecl,d)
+    showRightAscensionDeclination(topRA,topDecl)
+
+
+def showRightAscensionDeclination(RA,Decl):
+    hours = math.floor(RA/15)
+    minutes_mid = (RA/15 - hours)*60
+    minutes = math.floor(minutes_mid)
+    seconds = math.floor((minutes_mid-minutes)*100)
+    deciDecl = .6*(Decl - math.floor(Decl))
+    newDecl = math.floor(Decl) + deciDecl
+    strdecl = str(newDecl)
+    degs = strdecl.split(".")[0]
+    rest = strdecl.split(".")[1]
+    mins = rest[0:2]
+    secs = rest[2:4]
+    print("RA: {0}h {1}m {2}s -- Decl: {3} deg {4}\' {5}\""
+          .format(hours,minutes,seconds,degs,mins,secs))
+
+
+def extrapolateInfo(N,w,i,a,e,M,d):
+
+    # Convert to Radians
+    NRad = math.radians(N)
+    wRad = math.radians(w)
+    iRad = math.radians(i)
+    MRad = math.radians(M)
+    # Calculate secondary orbital elements
+    L = M + w + N  # mean longitude
+
+
 
 
 def getEccVal(E0, e, M):
@@ -97,7 +132,11 @@ def rev(deg):
     :param deg:
     :return: deg
     """
-    return deg - math.floor(deg/360.0)*360
+    while deg < 0.0:
+        deg += 360.0
+    while deg >= 360.0:
+        deg -= 360.0
+    return deg
 
 
 def converttoTopo(geo, r, lat, RA, Decl, d):
@@ -108,19 +147,17 @@ def converttoTopo(geo, r, lat, RA, Decl, d):
 
     gclat = lat - 0.1924 * math.sin(2 * math.radians(lat))
     rho = 0.99833 + 0.00167 * math.cos(2 * math.radians(lat))
-    # simplifying
-    #gclat = lat
-    #rho = 1.0
+    print("Gclat:", gclat, "Rho:", rho)
     pos.RAtoAzimuth(RA, Decl, d)
     LST = findLST(d)
-    HA = LST - RA
+    HA = rev(LST - RA+180)-180
     DeclRad = math.radians(Decl)
     HARad = math.radians(HA)
     gclatRad = math.radians(gclat)
-    g = rev(math.degrees(math.atan(math.tan(gclatRad) / math.cos(HARad))))
-    print("g:",g)
+    gRad = math.atan(math.tan(gclatRad) / math.cos(HARad))
+    print("g:",math.degrees(gRad)+90)
     topRA = RA - par * rho * math.cos(gclatRad) * math.sin(HARad) / math.cos(DeclRad)
-    topDecl = Decl - par * rho * math.sin(gclatRad) * math.sin(g - DeclRad) / math.sin(math.radians(g))
+    topDecl = Decl - par * rho * math.sin(gclatRad) * math.sin(gRad - DeclRad) / math.sin(gRad)
     return topRA, topDecl
 
 
@@ -129,14 +166,34 @@ def findLST(d):
     ws = 282.9404 + 4.70935*(10**-5) * d
     Ms = 356.0470 + 0.9856002585 * d
     L = rev(Ms + ws)
-    print("L:", L)
+    #print("L:", L)
     GMST0 = L/15 + 12
-    print("GMST0", GMST0)
+    #print("GMST0", GMST0)
     TLong = pos.getTelescopeCoords()[1]
+    #TLong = -71.15390
     LST = GMST0 + UT + TLong / 15
     LST = rev(LST*15)
-    print("LST:", LST)
+    #print("LST:", LST)
     return LST  # degrees
+
+
+def offsetSun(d):
+    NS,wS,iS,aS,eS,MS,geo,offset = readData("sun", d)
+    MSRad = math.radians(MS)
+    ES = MS + (180/Pi) * eS * math.sin(MSRad) * (1 + eS * math.cos(MSRad))
+    #ES = getEccVal(E0, eS, MS)
+    xS = math.cos(math.radians(ES)) - eS
+    yS = math.sin(math.radians(ES)) * math.sqrt(1 - eS**2)
+    print("xs-ys:",xS,yS)
+    rS = math.sqrt(xS**2 + yS**2)
+    vS = math.degrees(math.atan2(yS,xS))
+    print("w,a,e,M:",wS,aS,eS,MS)
+    print("vS, wS", vS, wS)
+    longS = rev(vS + wS)
+    xs = rS*math.cos(math.radians(longS))
+    ys = rS*math.sin(math.radians(longS))
+    print("XS-Y:",xs,ys)
+    return xs, ys
 
 
 def addMoonPerturbations(d, Lm, Mm, F):
@@ -163,8 +220,16 @@ def addMoonPerturbations(d, Lm, Mm, F):
     long += -0.031* math.sin(MmRad + MsRad)
     long += -0.015* math.sin(2 * FRad - 2 * DRad)
     long += 0.011* math.sin(MmRad - 4 * DRad)
-
+    # Latitude Perturbations
     lat = 0
+    lat += -0.173 * math.sin(FRad - 2 * DRad)
+    lat += -0.055 * math.sin(MmRad - FRad - 2 * DRad)
+    lat += -0.046 * math.sin(MmRad + FRad - 2 * DRad)
+    lat += 0.033 * math.sin(FRad + 2 * DRad)
+    lat += 0.017 * math.sin(2 * MmRad + FRad)
+    # Radius Perturbations
     r = 0
-
-    return long, lat, r
+    r += -0.58 * math.cos(MmRad - 2 * DRad)
+    r += -0.46 * math.cos(2 * DRad)
+    print("LatMod:",lat,"LongMod:",long,"RMod:",r)
+    return lat, long, r

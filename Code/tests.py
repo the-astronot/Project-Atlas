@@ -2,8 +2,8 @@ import positions as pos
 import calculations as calc
 import datetime as dt
 
-RA = 1.4824*15  # degrees
-Decl = 5.5354  # degrees
+RA = 2.4021*15  # degrees
+Decl = 11.4637  # degrees
 
 date = dt.datetime.utcnow()
 d = calc.getDayTime(date)
