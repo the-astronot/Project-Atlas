@@ -4,10 +4,10 @@ import calculations as calc
 
 # Gets Telescope's Coordinates
 def getTelescopeCoords():
-    lat = 42.48881  # Replace with real values from gps sensor
-    long = -71.15390  # Replace with real values from gps sensor
-    #long = 15
-    #lat = 60
+    #lat = 42.48881  # Replace with real values from gps sensor
+    #long = -71.15390  # Replace with real values from gps sensor
+    long = 15
+    lat = 60
     coords = [lat,  long]
     return coords
 
